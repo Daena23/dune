@@ -9,7 +9,7 @@ EXPLOSIBLE_OBJECTS = [0, 3, 4, 5, 6, 7, 8, 9, 10]  # 3 - breakable wall, 4, 5 - 
 OBJECTS_PASSED_BY_THE_EXPLOSION_BEAM = [0, 4, 5, 6, 7, 8, 9]
 COORDINATE_VARIANTS = [[-1, 0, 'up'], [0, -1, 'left'], [1, 0, 'down'], [0, 1, 'right']]
 PLAYER_COORDINATE_VARIANTS = [[-1, 0, 'up', 'w', 't'], [0, -1, 'left', 'a', 'f'], [1, 0, 'down', 's', 'g'], [0, 1, 'right', 'd', 'h'], [0, 0, 'stay', 'z', 'x']]
-INIT_POSITIONS = [[1, 1], [2, 1], [1, 2]]
+INIT_POSITIONS = [[1, 1], [2, 1], [1, 2], [3, 1], [1, 3]]
 
 
 class Monster:
@@ -23,12 +23,12 @@ class Monster:
         self.x_monster_old_coord = []
         self.y_monster_old_coord = []
 
-    def monster_death(self, my_monsters):
-        for monster in my_monsters:
+    def monster_death(self, all_monsters):
+        for monster in all_monsters:
             if not self.is_alive:
                 print(f'dead monster: {monster}')
-                my_monsters.remove(monster)
-        return my_monsters
+                all_monsters.remove(monster)
+        return all_monsters
 
 
 class MonsterCat(Monster):
@@ -39,9 +39,9 @@ class MonsterCat(Monster):
         self.name = "Cat"
         self.id = 4
 
-    def monster_move(self, lines):
-        direction_variants = direction_variants_identification(self, lines)
-        if lines.step % 2 == 0:
+    def monster_move(self, field):
+        direction_variants = direction_variants_identification(self, field)
+        if field.step % 2 == 0:
             monster_new_coord = self.y_monster, self.x_monster, self.direction
         else:
             monster_new_coord = random_action(self, direction_variants)
@@ -72,18 +72,18 @@ def direction_variants_identification(monster, lines):
     direction_variants = []
     for direction_id in range(len(COORDINATE_VARIANTS)):
         y_dir, x_dir, dir_name = COORDINATE_VARIANTS[direction_id]
-        y_sum, x_sum = monster.y_monster + y_dir, monster.x_monster + x_dir
-        if [y_sum, x_sum] in lines.penetrable_cell_coord:
+        y_sum, x_sum = monster.y + y_dir, monster.x + x_dir
+        if [y_sum, x_sum] in lines.penetrable_cells_coord:
             direction_variants.append([y_sum, x_sum, dir_name])
     # print('dir_var', direction_variants)
     return direction_variants
 
 
 def monster_movement(monster, lines):
-    y_monster, x_monster, monster_direction, monster_id, is_alive = monster.y_monster, monster.x_monster, monster.direction, monster.id, monster.is_alive
-    monster.y_monster_old_coord, monster.x_monster_old_coord = y_monster, x_monster
+    y_monster, x_monster, monster_direction, monster_id, is_alive = monster.y, monster.x, monster.direction, monster.id, monster.is_alive
+    monster.y_old_coord, monster.x_old_coord = y_monster, x_monster
     monster_new_coord = monster.monster_move(lines)
-    monster.y_monster, monster.x_monster, monster.direction = monster_new_coord
+    monster.y, monster.x, monster.direction = monster_new_coord
 
 
 def random_action(monster, direction_variants):
@@ -91,7 +91,7 @@ def random_action(monster, direction_variants):
     if len(direction_variants) > 0:
         monster_new_coord = choice(direction_variants)
     else:
-        monster_new_coord = [monster.y_monster, monster.x_monster, 'no_way']
+        monster_new_coord = [monster.y, monster.x, 'no_way']
     return monster_new_coord
 
 
@@ -100,13 +100,13 @@ def action_straight(monster, direction_variants, lines):
     p_turn = 0.9
     for direction_id in range(len(COORDINATE_VARIANTS)):
         y_dir, x_dir, dir_name = COORDINATE_VARIANTS[direction_id]
-        y_sum = monster.y_monster + y_dir
-        x_sum = monster.x_monster + x_dir
-        if monster.direction == dir_name and [y_sum, x_sum] in lines.penetrable_cell_coord:
+        y_sum = monster.y + y_dir
+        x_sum = monster.x + x_dir
+        if monster.direction == dir_name and [y_sum, x_sum] in lines.penetrable_cells_coord:
             monster_new_coord = [y_sum, x_sum, dir_name]
             if len(direction_variants) > 2 and p_turn < random.random():
                 monster_new_coord = casual_turn(monster, monster_new_coord, direction_variants)
-        elif monster.direction == dir_name and [y_sum, x_sum] not in lines.penetrable_cell_coord:
+        elif monster.direction == dir_name and [y_sum, x_sum] not in lines.penetrable_cells_coord:
             monster_new_coord = random_action(monster, direction_variants)
     return monster_new_coord
 
@@ -116,8 +116,8 @@ def casual_turn(monster, monster_new_coord, direction_variants):
     for direction_id in range(len(COORDINATE_VARIANTS)):
         y_dir, x_dir, dir_name = COORDINATE_VARIANTS[direction_id]
         if dir_name == monster_new_coord[2]:
-            y_monster_reverse = monster.y_monster - y_dir
-            x_monster_reverse = monster.x_monster - x_dir
+            y_monster_reverse = monster.y - y_dir
+            x_monster_reverse = monster.x - x_dir
     for i in range(len(direction_variants)):
         if y_monster_reverse == direction_variants[i][0] and x_monster_reverse == direction_variants[i][1]:
             direction_variants.pop(i)

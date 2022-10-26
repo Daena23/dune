@@ -1,100 +1,100 @@
 from utils import PLAYER_COORDINATE_VARIANTS
 from bomb import Bomb
+from grave import Grave
+
 
 class Player:
     def __init__(self):
-        self.id = 9
-        self.player_win_id = 11
-        self.y_player = 1
-        self.x_player = 1
-        self.y_player_old_coord = 1
-        self.x_player_old_coord = 1
+        self.print_symbol = 'P'
+        self.priority = 2
+        self.y = 1
+        self.x = 1
+        self.y_old_coord = 1
+        self.x_old_coord = 1
         self.is_alive = True
         self.refractory_period = False
         self.refractory_time = 0
-        self.player_coord = [1, 1, False]
-        self.player_step_counter = 0
+        self.can_player_pass = True
+        self.can_monster_pass = True
+        self.stop_explosion = False
+        self.max_bombs_n = 2
+        # self.player_coord = [1, 1, False]
+        # self.player_step_counter = 0
+        self.explosible = False
 
-    def player_turn(self, lines, my_bombs):
+    def player_turn(self, field, all_bombs):
         wasd = 'wasdz'
         tfgh = ['t', 'f', 'g', 'h', 'x']
         if self.is_alive:
             if not self.refractory_period:
                 event = input('Do you want to put a bomb? Enter the direction of player | wasd/tfgh')
                 if event in wasd:
-                    self.player_move(lines, event)
+                    self.player_move(field, event)
                 elif event in tfgh:
-                    self.bomb_creation(lines, my_bombs)
-                    self.player_move(lines, event)
+                    self.bomb_creation(field, all_bombs)
+                    self.player_move(field, event)
                 else:
                     print('Ti che nabral allo?')
             elif self.refractory_period:
                 event = input('Enter the direction of player | wasd')
-                self.player_move(lines, event)
+                self.player_move(field, event)
 
-    def player_move(self, lines, event):
+    def player_move(self, field, event):
         if self.is_alive:
+            self.y_old_coord = self.y
+            self.x_old_coord = self.x
             for i in range(len(PLAYER_COORDINATE_VARIANTS)):
-                y_player_new = self.y_player + PLAYER_COORDINATE_VARIANTS[i][0]
-                x_player_new = self.x_player + PLAYER_COORDINATE_VARIANTS[i][1]
-                direction_choice = False
                 if event == PLAYER_COORDINATE_VARIANTS[i][3] or event == PLAYER_COORDINATE_VARIANTS[i][4]:
-                    direction_choice = True
-                if direction_choice and [y_player_new, x_player_new] in lines.penetrable_cell_coord:
-                    self.y_player_old_coord = self.y_player
-                    self.x_player_old_coord = self.x_player
-                    self.y_player = y_player_new
-                    self.x_player = x_player_new
-        self.player_coord = [self.y_player, self.x_player, self.refractory_period]
+                    y_new = self.y + PLAYER_COORDINATE_VARIANTS[i][0]
+                    x_new = self.x + PLAYER_COORDINATE_VARIANTS[i][1]
+                    if [y_new, x_new] in field.penetrable_cells_coord: # direction_choice
+                        self.y = y_new
+                        self.x = x_new
+                    field.field[self.y_old_coord][self.x_old_coord].remove(self)
+                    field.field[self.y][self.x].append(self)
 
-    def if_player_eaten(self, monster):
+    def if_player_eaten(self, field, monster):
         eating_condition = False
         if self.is_alive:
-            if monster.y_monster == self.y_player and monster.x_monster == self.x_player:
+            if monster.y == self.y and monster.x == self.x:
                 eating_condition = True
                 print('you are eaten')
-                self.player_dead()
-
-            # к следующему условию мгого вопросов: надо еще добавить старые координаты монстра
+                self.player_dead(field)
             switch_eating_condition1 = False
             switch_eating_condition2 = False
-            if monster.y_monster == self.y_player_old_coord and monster.x_monster == self.x_player_old_coord:
+            if monster.y == self.y_old_coord and monster.x == self.x_old_coord:
                 switch_eating_condition1 = True
-            if monster.y_monster_old_coord == self.y_player and monster.x_monster_old_coord == self.x_player:
+            if monster.y_old_coord == self.y and monster.x_old_coord == self.x:
                 switch_eating_condition2 = True
             if switch_eating_condition1 and switch_eating_condition2:
                 print('sam nabizhal na monstra')
-                self.player_dead()
+                self.player_dead(field)
 
-    def player_dead(self):
-        self.id = 8
-        self.is_alive = False
-
-    def bomb_creation(self, lines, my_bombs):
-        bomb = Bomb()
-        bomb.bomb_exist = True
-        self.refractory_period = True
-        self.player_step_counter = lines.step
-        bomb.y = self.y_player
-        bomb.x = self.x_player
-        bomb.timer = 0
-        bomb.explosion_area = bomb.bomb_explosion_area_ident(lines)
-        my_bombs.append(bomb)
-        return my_bombs
+    def player_dead(self, field):
+        if self.is_alive:
+            self.is_alive = False
+            field.field[self.y][self.x].remove(self)
+            field.field[self.y][self.x].append(Grave())
 
     def is_player_win(self, portal):
-        if self.y_player == portal.y and self.x_player == portal.x:
-            # lines.field[self.y_player, self.x_player] = self.player_win_id
-            # print('is_player_winyou win!')
+        if self.y == portal.y and self.x == portal.x:
+            self.print_symbol = 'W'
             return True
         return False
 
-    def player_cooldown_switch(self, bomb, my_bombs):
-        bomb_timer = 0
-        if len(my_bombs) == bomb.max_bombs_n:
-            bomb_timer = my_bombs[0].timer
-        if len(my_bombs) == bomb.max_bombs_n and bomb_timer < bomb.explosion_time - 1:
-            self.refractory_period = True
-        else:
-            self.refractory_period = False
-        # print(self.refractory_period, 'my_bombs', len(my_bombs), '1bombtimer', bomb_timer)
+    def bomb_creation(self, field, all_bombs):
+        bomb = Bomb()
+        bomb.bomb_exist = True
+        self.refractory_period = True
+        self.player_step_counter = field.step
+        bomb.y = self.y
+        bomb.x = self.x
+        bomb.timer = 0
+        bomb.explosion_area = bomb.bomb_explosion_area_ident(field)
+        field.field[self.y][self.x].append(bomb)
+        all_bombs.append(bomb)
+        field.penetrable_cells_coord.remove([self.y, self.x])
+        return all_bombs
+
+    def player_cooldown_switch(self, all_bombs):
+        self.refractory_period = len(all_bombs) >= self.max_bombs_n
