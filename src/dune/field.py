@@ -1,9 +1,8 @@
 import random
 from random import choice
 from copy import deepcopy
-from utils import INIT_POSITIONS, PENETRABLE_OBJECTS
-from monster import MonsterDog
-from monster import MonsterCat
+from configurations import PLAYER_INIT_POSITIONS, PENETRABLE_OBJECTS
+from monster import MonsterCat, MonsterDog
 
 
 class Field:
@@ -34,7 +33,8 @@ class Field:
     def empty_field_creation(self):
         self.empty_field = deepcopy(self.zero_field)
         for t in range(self.size):
-            for m in range(self.size):
+            for m\
+                    in range(self.size):
                 if (t % 2 == 0) and (m % 2 == 0):
                     self.empty_field[t][m] = 2  # unbreakable intermediate walls
                 if t == 0 or t == self.size - 1:
@@ -48,9 +48,9 @@ class Field:
                 if self.empty_field[t][m] != 1 and self.empty_field[t][m] != 2:
                     if random.random() < self.p_walls:
                         self.breakable_walls_coord.append([t, m])
-        for i in range(len(INIT_POSITIONS)):
-            if INIT_POSITIONS[i] in self.breakable_walls_coord:
-                self.breakable_walls_coord.remove(INIT_POSITIONS[i])
+        for i in range(len(PLAYER_INIT_POSITIONS)):
+            if PLAYER_INIT_POSITIONS[i] in self.breakable_walls_coord:
+                self.breakable_walls_coord.remove(PLAYER_INIT_POSITIONS[i])
         self.breakable_walls_coord.sort()
         return self.breakable_walls_coord
 
@@ -68,9 +68,9 @@ class Field:
     def monster_coord_ident_init(self):
         monster_list_init = []
         monster_available_cells = self.empty_cell_coord.copy()
-        for counter in range(len(INIT_POSITIONS)):
-            if INIT_POSITIONS[counter] in monster_available_cells:
-                monster_available_cells.remove(INIT_POSITIONS[counter])
+        for counter in range(len(PLAYER_INIT_POSITIONS)):
+            if PLAYER_INIT_POSITIONS[counter] in monster_available_cells:
+                monster_available_cells.remove(PLAYER_INIT_POSITIONS[counter])
         n_monster = random.randint(int(self.size / 7), int(self.size * 1))
         # n_monster = 0
         while n_monster > len(monster_available_cells):

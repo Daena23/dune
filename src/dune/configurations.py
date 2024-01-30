@@ -15,4 +15,4 @@ PLAYER_COORDINATE_VARIANTS = [
     [0, 1, 'right', 'd', 'h'],
     [0, 0, 'stay', 'z', 'x'],
 ]
-INIT_POSITIONS = [[1, 1], [2, 1], [1, 2]]
+PLAYER_INIT_POSITIONS = [[1, 1], [2, 1], [1, 2]]

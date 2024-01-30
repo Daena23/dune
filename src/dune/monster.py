@@ -1,7 +1,7 @@
 from random import choice
 import random
 from copy import deepcopy
-from utils import COORDINATE_VARIANTS
+from configurations import COORDINATE_VARIANTS
 
 
 class Monster:

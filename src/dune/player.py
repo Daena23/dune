@@ -1,4 +1,4 @@
-from utils import PLAYER_COORDINATE_VARIANTS
+from configurations import PLAYER_COORDINATE_VARIANTS
 from bomb import Bomb
 
 class Player:
