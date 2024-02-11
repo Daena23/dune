@@ -1,62 +1,39 @@
-import time
-
 from field import Field
-from player import Player
-from monster import monster_movement
-from bomb import Bomb
-from portal import Portal
+from game_initialization import initialize_game
+from game_loop import update_field, update_loop, update_portal, update_bombs, update_player, \
+    update_monsters, update_explosions
+# TODO насколько нужно deepcopy empty field/ symbols
 
 
 def main():
-    # initial field
-    field = Field(size=13, p_walls=0)
-    field.monster_list_init = field.monster_coord_ident_init()  # выбор начальных координат всех монстров
-    my_monsters = field.create_monsters()  # определяем id монстров и создаем лист монстров
-    field.penetrable_cell_coord = field.penetrable_cell_coord_ident()
-    # засаживаем монстрами и игроком пустое поле
-    field.field = field.field_player_and_monsters_placement_init(my_monsters)
-
     # initial parameters
-    player = Player()
-    bomb = Bomb()
-    portal = Portal()
-    my_bombs = []
-    player_step_counter = 0
-    field.penetrable_cell_coord.sort()
-    field.playfield_visualization()
+    field = Field(size=9, p_walls=0.2)  # size - odd; p_wall - 0.1-0.3
+    player, monsters_list, bombs_list, portal, explosions_list, new_bomb = initialize_game(field)
+    portal_exists = False
+    player_won = False
+    player_lost = False
+    postmortem_steps = 0
+    step = 0
 
-    while field.postmortem_steps < 8 and not player.is_player_win(portal):
-        # также надо чтобы монстр не мог ходить в стену
-        player.player_turn(field, my_bombs)
-        for bomb in my_bombs:
-            # взрыв стены, непроходимость бомбы, счетчик бомбы
-            bomb.timer += 1
-            bomb.wall_explosion(field)
-            bomb.bomb_kills_player(player)
-            bomb.bomb_is_not_passable(field)
-            # print('bomb timer', bomb.timer, bomb.explosion_area)
-        # bomb.circular_explosion(lines, my_bombs)
-        # определение координат монстров, ход монстра и проверка на сьедение игрока
-        for monster in my_monsters:
-            monster_movement(monster, field)
-            player.if_player_eaten(monster)
-        for bomb in my_bombs:
-            bomb.bomb_kills_monster(my_monsters)
-            bomb.bomb_explodes_bomb(my_bombs)
-        player.player_cooldown_switch(bomb, my_bombs)
-        portal.portal_appearance(field, my_monsters)
-        field.field = field.playfield_update(player, my_monsters, my_bombs, portal)
-        field.playfield_visualization()
-        field.step = field.step + 1
-        if not player.is_alive:
-            field.postmortem_steps += 1
-            time.sleep(0.5)
-
-    if player.is_player_win(portal):
+    while not (player_lost or player_won) or postmortem_steps < 4:
+        # todo проблема ходит бомбой в бомбу, - радномные бомбы; бомба выше игрока; можно отгородиться от монстра; своевременное удаление бомбы - двойной вхрыв
+        update_player(field, player, bombs_list, postmortem_steps)
+        explosions_list = update_bombs(field, player, bombs_list)
+        update_explosions(player, explosions_list)
+        print('bomb list', bombs_list)
+        for bomb in bombs_list:
+            print('bomb.timer', bomb.timer)
+        update_monsters(field, player, monsters_list, step)
+        portal_exists = update_portal(field, monsters_list, portal_exists, portal)
+        update_field(field, player, monsters_list, bombs_list, explosions_list, portal, portal_exists, player_won)
+        player_lost, player_won, postmortem_steps = update_loop(player, monsters_list, portal, player_lost, postmortem_steps)
+        field.visualize()
+        step += 1
+    if player_won:
         print('you win ❤')
-    if not player.is_alive:
+    if player_lost:
         print('you loose ❤')
 
 
-if __name__ == '__main__':  # Вызывается только если мы напрямую вызываем данный файл (python main.py)
+if __name__ == '__main__':
     main()
