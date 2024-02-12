@@ -1,28 +1,25 @@
-from configurations import PLAYER_CV
-from bomb import Bomb
-from configurations import EVENTS_JUST_WALK, EVENTS_PUT_BOMB
+from configurations import EVENTS_JUST_WALK, EVENTS_PUT_BOMB, PLAYER_COORD_VARS
 
 
 class Player:
-    id = 4
-    dying_id = 8
-    dead_id = 9
+    init_id = 4
+    dying_id = 11
+    dead_id = 5
     win_id = 11
 
     def __init__(self):
-        self.id = Player.id
+        self.id = Player.init_id
         self.row_init = 1
         self.column_init = 1
         self.row = 1
         self.column = 1
-        self.previous_row = None
-        self.previous_column = None
+        self.previous_row = 1
+        self.previous_column = 1
+        self.coord = [1, 1, False]
         self.alive = True
         self.creating_bomb = False
-
+        self.won = False
         self.refractory_time = 0
-        self.coord = [1, 1, False]
-        # self.step_counter = 0
 
     @staticmethod
     def command(field) -> str:
@@ -39,25 +36,21 @@ class Player:
             else:
                 print('Wrong input')
 
-    def move(self, field, event):
-        self.previous_row, self.previous_row = self.row, self.column
-        for i in range(len(PLAYER_CV)):
-            if event in (PLAYER_CV[i][3], PLAYER_CV[i][4]) and \
-                    [self.row + PLAYER_CV[i][0], self.column + PLAYER_CV[i][1]] in field.find_penetrable_cells_coord():
-                self.previous_row = self.row  # todo зачем previous
-                self.previous_column = self.column
-                self.row = self.row + PLAYER_CV[i][0]
-                self.column = self.column + PLAYER_CV[i][1]
-            else:
-                pass
+    def move(self, field, event: str):
+        self.previous_row, self.previous_column = self.row, self.column
+        for i in range(len(PLAYER_COORD_VARS)):
+            if event in (PLAYER_COORD_VARS[i][3], PLAYER_COORD_VARS[i][4]) and \
+                    [self.row + PLAYER_COORD_VARS[i][0], self.column + PLAYER_COORD_VARS[i][1]]\
+                    in field.penetrable_cells_coord:
+                self.previous_row, self.previous_column = self.row, self.column
+                self.row = self.row + PLAYER_COORD_VARS[i][0]
+                self.column = self.column + PLAYER_COORD_VARS[i][1]
 
     def kill(self):
         self.id = Player.dying_id
         self.alive = False
-        # self.dying_process = False
 
-    def win(self, my_monsters, portal):
-        if not my_monsters and (self.row, self.column == portal.row, portal.column):
-            print('is_player_win!')
-            return True
-        return False
+    def win(self):
+        self.id = Player.win_id
+        self.won = True
+        print('is_player_win!')

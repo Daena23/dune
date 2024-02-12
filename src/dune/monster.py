@@ -3,8 +3,7 @@ from random import choice
 from typing import List
 
 from configurations import COORD_VARS, PENETRABLE_OBJECTS
-from dune.src.dune.player import Player
-from field import Field
+from player import Player
 
 
 class Monster(ABC):
@@ -12,22 +11,22 @@ class Monster(ABC):
     def __init__(self):
         self.row = None
         self.column = None
-        self.dir = 6
-        self.is_alive = True
         self.previous_row = None
         self.previous_column = None
+        self.dir = 6
+        self.alive = True
 
     @abstractmethod
     def move(self, field, step):
         pass
 
 
-class MonsterНexamoebo(Monster):
+class MonsterHexamoebo(Monster):
     def __init__(self):
         super().__init__()
-        self.id = 5
+        self.id = 6
 
-    def move(self, field: Field, step: int):
+    def move(self, field, step: int):
         if step % 2 == 0:
             random_move(self, field)
 
@@ -37,9 +36,9 @@ class MonsterDog(Monster):
 
     def __init__(self):
         super().__init__()
-        self.id = 6
+        self.id = 7
 
-    def move(self, field: Field, step: int):
+    def move(self, field, step: int):
         available_directions = find_available_directions(self, field)
         if self.dir in range(4):  # defined direction
             if self.dir in [variant[2] for variant in available_directions]:
@@ -50,6 +49,15 @@ class MonsterDog(Monster):
             random_move(self, field)
 
 
+class LazyMonster(Monster):
+    def __init__(self):
+        super().__init__()
+        self.id = 6
+
+    def move(self, field, step: int):
+        pass
+
+
 class TuckerCarlson(Monster):
     putin_detection_range = 3
 
@@ -57,7 +65,7 @@ class TuckerCarlson(Monster):
         super().__init__()
         self.id = 77
 
-    def move(self, field: Field, step: int) -> None:
+    def move(self, field, step: int) -> None:
         carlson_x = self.row
         carlson_y = self.column
 
@@ -90,7 +98,7 @@ class TuckerCarlson(Monster):
 
 
 # monster's move functions
-def random_move(monster: Monster, field: Field):
+def random_move(monster: Monster, field):
     direction_variants = find_available_directions(monster, field)
     if direction_variants:
         monster.row, monster.column, monster.dir = choice(direction_variants)
@@ -98,10 +106,10 @@ def random_move(monster: Monster, field: Field):
         monster.dir = 4
 
 
-def find_available_directions(monster: Monster, field: Field):
+def find_available_directions(monster: Monster, field):
     direction_variants = []
     for coord in COORD_VARS[0:4]:
-        if [monster.row + coord[0], monster.column + coord[1]] in field.find_penetrable_cells_coord():
+        if [monster.row + coord[0], monster.column + coord[1]] in field.find_init_penetrable_cells_coord():
             direction_variants.append([monster.row + coord[0], monster.column + coord[1], COORD_VARS.index(coord)])
     return direction_variants
 
@@ -126,35 +134,10 @@ def invert_direction(direction: int):
     # return direction+2 if (3 >= direction+2 >= 0) else direction-2
 
 
-def eats_player(player, monster):  # TODO
+def monster_eats_player(player: Player, monster: Monster):
     condition1 = (monster.row, monster.column) == (player.row, player.column)
     condition2 = (monster.row, monster.column) == (player.previous_row, player.previous_column)
     condition3 = (monster.previous_row, monster.previous_column) == (player.row, player.column)
     eating_conditions = [condition1, condition2 and condition3]
     if player.alive and any(eating_conditions):
         player.kill()
-        print('eaten')
-        # player.dead(postmortem_steps)
-
-
-    # eating_condition = False
-    # if player.alive:
-        #
-        # # к следующему условию много вопросов: надо еще добавить старые координаты монстра
-        # switch_eating_condition1 = False
-        # switch_eating_condition2 = False
-        # if (self.row, self.column) == (player.previous_row, player.previous_column):
-        #     switch_eating_condition1 = True
-        # if (self.row_old, self.column_old) == (self.row, self.column):
-        #     switch_eating_condition2 = True
-        # if switch_eating_condition1 and switch_eating_condition2:
-        #     print('sam nabizhal na monstra')
-        #     player.player_dead()
-
-
-def monster_death(self, my_monsters):
-    for monster in my_monsters:
-        if not self.is_alive:
-            my_monsters.remove(monster)  # todo не перекосячит ли лист
-            print(f'dead monster: {monster}')
-    # monsters_list[:] = keep
