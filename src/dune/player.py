@@ -1,14 +1,13 @@
-from configurations import EVENTS_JUST_WALK, EVENTS_PUT_BOMB, PLAYER_COORD_VARS
+from configurations import EVENTS_JUST_WALK, EVENTS_PUT_BOMB, LEVEL_CONSTANTS, PLAYER_VARS, PLAYER_INIT_COORD, SYMBOLS
+from any_object import LivingObject
+from game_loop import create_bomb
 
 
-class Player:
-    init_id = 4
-    dying_id = 11
-    dead_id = 5
-    win_id = 11
-
+class Player(LivingObject):
+    # бомба выше могилы
     def __init__(self):
-        self.id = Player.init_id
+        super().__init__(PLAYER_INIT_COORD[0][0], PLAYER_INIT_COORD[0][1])
+        # coord
         self.row_init = 1
         self.column_init = 1
         self.row = 1
@@ -16,41 +15,48 @@ class Player:
         self.previous_row = 1
         self.previous_column = 1
         self.coord = [1, 1, False]
-        self.alive = True
-        self.creating_bomb = False
-        self.won = False
+        # properties
+        self.exists = True
         self.refractory_time = 0
+        self.penetrable = True
+        self.explosible = True
+        self.stop_explosion = False
+
+    def make_move(self, field, game, step, player_won, player_lost) -> None:
+        if not (player_won or player_lost):
+            event = self.get_command(field)
+            self.make_step(game, event)
+            if event in EVENTS_PUT_BOMB and not field.max_bomb_reached:  # len(game.bombs) < LEVEL_CONSTANTS['max_bomb_num']:
+                self.put_bomb(game)
 
     @staticmethod
-    def command(field) -> str:
-        str_just_walk = 'w, a, s, d or z'
-        str_walk_and_put_bombs = 't, f, g, h or x'
-        event_put_bomb = EVENTS_PUT_BOMB
-        if field.max_bombs_reached:
-            event_put_bomb = None
-            str_walk_and_put_bombs = None
+    def get_command(field) -> str:
+        str_just_walk, str_walk_and_put_bombs = 'w, a, s, d or z', 't, f, g, h or x'
+        if field.max_bomb_reached:
+            str_walk_and_put_bombs = ''
         while True:
             event = input(f'Input {str_just_walk} | {str_walk_and_put_bombs}')
-            if event in (EVENTS_JUST_WALK + event_put_bomb):
+            if event in (EVENTS_JUST_WALK + EVENTS_PUT_BOMB):
                 return event
             else:
                 print('Wrong input')
 
-    def move(self, field, event: str):
+    def make_step(self, game, event: str):
         self.previous_row, self.previous_column = self.row, self.column
-        for i in range(len(PLAYER_COORD_VARS)):
-            if event in (PLAYER_COORD_VARS[i][3], PLAYER_COORD_VARS[i][4]) and \
-                    [self.row + PLAYER_COORD_VARS[i][0], self.column + PLAYER_COORD_VARS[i][1]]\
-                    in field.penetrable_cells_coord:
+        for i in range(len(PLAYER_VARS)):
+            event_vars = PLAYER_VARS[i][3] + PLAYER_VARS[i][4]
+            coord_vars = [self.row + PLAYER_VARS[i][0], self.column + PLAYER_VARS[i][1]]
+            if event in event_vars + event_vars.upper() and coord_vars in game.penetrable_cell_coord:
                 self.previous_row, self.previous_column = self.row, self.column
-                self.row = self.row + PLAYER_COORD_VARS[i][0]
-                self.column = self.column + PLAYER_COORD_VARS[i][1]
+                self.row += PLAYER_VARS[i][0]
+                self.column += PLAYER_VARS[i][1]
+
+    def put_bomb(self, game):
+        if [self.previous_row, self.previous_column] != [game.portal.row, game.portal.column] and \
+                [game.player.row, game.player.column] in game.penetrable_cell_coord:  # to not put in one cell twice
+            create_bomb(game)
 
     def kill(self):
-        self.id = Player.dying_id
-        self.alive = False
+        self.symbol = SYMBOLS['Destroying']
+        self.exists = False
 
-    def win(self):
-        self.id = Player.win_id
-        self.won = True
-        print('is_player_win!')

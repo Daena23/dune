@@ -1,90 +1,91 @@
+import random
 from typing import List
 
-from bomb import Bomb
-from configurations import COORD_VARS, EXPLOSIBLE_OBJECTS, OBJECTS_TO_STOP_EXPLOSION
-from field import Field
-from monster import Monster
-from player import Player
+from any_object import AnyObject
+from configurations import COORD_VARS, DIR_VARS, LEVEL_CONSTANTS, SYMBOLS
+from dune.src.dune.monster import MonsterDog, MonsterHexamoebo
 
 
-class Explosion:
-    explosion_power = 3  # min = 2
+def hits_wall(game, row_beam, column_beam):
+    for obj in game.breakable_walls:
+        if [obj.row, obj.column] == [row_beam, column_beam]:
+            destroy(obj)
+            game.penetrable_cell_coord.append([row_beam, column_beam])
+            return True
+    # for obj in game.non_breakable_walls:
+    #     if [obj.row, obj.column] == [row_beam, column_beam]:
+    #         return True
+    return False
 
-    def __init__(self, field, bomb):
-        self.id_center = 9
-        self.id_corners = 10
-        self.id_destroyed = 11
-        self.row_center = bomb.row
-        self.column_center = bomb.column
-        self.explosion_area = []
-        self.walls_to_explode_coord = []
-        self.find_explosion_area(field)
 
-    def find_explosion_area(self, field: Field):
-        explosion_area = []
-        walls_to_explode_coord = []
+def hits_living_object(game, row_beam, column_beam):
+    for liv_obj in game.get_living_objects():
+        if [liv_obj.row, liv_obj.column] == [row_beam, column_beam]:
+            destroy(liv_obj)
+
+
+def hits_portal(field, game, row_beam, column_beam):
+    if [game.portal.row, game.portal.column] == [row_beam, column_beam] and\
+            [game.portal.row, game.portal.column] not in field.breakable_wall_coord:
+        game.create_new_monsters = True
+
+
+def destroy(obj):
+    obj.exists = False
+    obj.symbol = SYMBOLS['Destroying']
+
+
+def hits_bomb(game, row_beam, column_beam) -> bool:
+    for bomb in game.bombs:
+        if [bomb.row, bomb.column] == [row_beam, column_beam]:
+            bomb.timer = LEVEL_CONSTANTS['bomb_lifetime']
+            return True
+    return False
+
+
+def has_object(objects: List[AnyObject], row: int, column: int) -> bool:
+    for obj in objects:
+        if [obj.row, obj.column] == [row, column]:
+            return True
+    return False
+
+
+class Explosion(AnyObject):
+    def __init__(self, game, bomb_row, bomb_column):
+        super().__init__()
+        self.symbol = SYMBOLS['Explosion']
+        self.power = LEVEL_CONSTANTS['power']
+        self.exists = True
+        # coord
+        self.row = bomb_row
+        self.column = bomb_column
+        self.area = self.find_area(game)
+        # properties
+        self.penetrable = True
+        self.explosible = False
+        self.stop_explosion = False
+
+    def find_area(self, game):
+        area = []
         for row_dir, column_dir in COORD_VARS[0:4]:
-            for power in range(Explosion.explosion_power):
-                row_beam, column_beam = self.row_center + row_dir * power, self.column_center + column_dir * power
-                if field.field[row_beam][column_beam] == EXPLOSIBLE_OBJECTS[0]:  # breakable_wall
-                    walls_to_explode_coord.append([row_beam, column_beam])
-                    explosion_area.append((row_beam, column_beam))
+            for power in range(1, LEVEL_CONSTANTS['power']):
+                row_beam, column_beam = self.row + row_dir * power, self.column + column_dir * power
+                if has_object(game.non_breakable_walls, row_beam, column_beam):
                     break
-                if field.field[row_beam][column_beam] in OBJECTS_TO_STOP_EXPLOSION:  # unbreakable_wall
+                if has_object(game.breakable_walls, row_beam, column_beam):
+                    area.append((row_beam, column_beam))
                     break
-                explosion_area.append((row_beam, column_beam))
-        # remove repeats
-        self.walls_to_explode_coord = walls_to_explode_coord
-        explosion_area = set(explosion_area)
-        self.explosion_area = [list(explosion_point) for explosion_point in explosion_area]
+                area.append((row_beam, column_beam))
+        area = set(area)
+        return [list(explosion_point) for explosion_point in area]
 
-    def kills_player(self, player: Player, destroyed_objects: List[List[int]]):
-        if player.alive and [player.row, player.column] in self.explosion_area:
-            player.kill()
-            destroyed_objects.append([player.row, player.column])
-
-    def kills_monster(self, monster_list: List[Monster], destroyed_objects: List):
-        for monster in monster_list:
-            if [monster.row, monster.column] in self.explosion_area:
-                monster.alive = False
-                destroyed_objects.append([monster.row, monster.column])
-        #         print('monster is dead', monster.row, monster.column)
-        # monster_list[:] = [monster for monster in monster_list if not monster.alive]
-
-    @staticmethod
-    def explodes_wall(field: Field, explosion_list: List, destroyed_objects: List):
-        for explosion in explosion_list:
-            for coord in explosion.walls_to_explode_coord:
-                if coord in field.breakable_walls_coord:
-                    field.breakable_walls_coord.remove(coord)
-                    field.penetrable_cells_coord.append(coord)
-                    destroyed_objects.append(coord)
-        for explosion in explosion_list:
-            # if [explosion.row_center, explosion.column_center] in field.penetrable_cells_coord:
-            field.penetrable_cells_coord.append([explosion.row_center, explosion.column_center])
-
-    @staticmethod
-    def explodes_bomb(bomb_list: List[Bomb], explosion_list: List):
-        for explosion in explosion_list:
-            for bomb in bomb_list:
-                if [bomb.row, bomb.column] in explosion.explosion_area:
-                    bomb.timer = Bomb.lifespan
-    #
-    # def circular_explosion(self, lines, my_bombs):
-    #     if len(my_bombs) >= 2:
-    #         first_bomb_timer = my_bombs[0].timer
-    #         first_bomb_explosion_area = my_bombs[0].explosion_area
-    #         y_first_bomb = my_bombs[0].row
-    #         x_first_bomb = my_bombs[0].column
-    #         if first_bomb_timer == self.lifespan - 1:
-    #             circular_explosion_area = deepcopy(first_bomb_explosion_area)
-    #             circular_explosion_area.remove([y_first_bomb, x_first_bomb])
-    #             print('CEA', circular_explosion_area)
-    #
-    #             for counter in range(len(circular_explosion_area)):
-    #                 y, x = circular_explosion_area[counter]
-    #                 if lines.field[self.row][self.column] == 6:
-    #                     for bomb in my_bombs:
-    #                         if y == self.row and x == self.column:
-    #                             self.timer = self.lifespan - 2
-    #         print('cyrk')
+    def affect_own_area(self, field, game) -> bool:
+        chain = False
+        for row, column in self.area:
+            hits_living_object(game, row, column)
+            hits_portal(field, game, row, column)
+            hits_wall(game, row, column)
+            another_bomb_affected = hits_bomb(game, row, column)
+            chain = chain or another_bomb_affected
+        # It returns whether this explosion hits another bomb or not.
+        return chain

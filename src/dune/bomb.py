@@ -1,13 +1,21 @@
-class Bomb:
-    lifespan = 3
+from configurations import LEVEL_CONSTANTS
+from any_object import AnyObject
 
-    def __init__(self):
-        self.id = 8
-        self.row = None
-        self.column = None
+
+class Bomb(AnyObject):
+    def __init__(self, row, column):
+        super().__init__()
+        # self.lifetime = LEVEL_CONSTANTS['bomb_lifetime']
+        # coord
+        self.row = row
+        self.column = column
+        # properties
         self.exists = True
         self.timer = 0
-        self.exploding = False
+        self.explosive = True  # взрывоопасный
+        self.penetrable = False
+        self.explosible = True
+        self.stop_explosion = False
 
-    def if_explodes(self):
-        return self.timer == Bomb.lifespan
+    def exploding(self):
+        return self.timer == LEVEL_CONSTANTS['bomb_lifetime']

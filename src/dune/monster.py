@@ -1,115 +1,70 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from random import choice
 from typing import List
 
-from configurations import COORD_VARS, PENETRABLE_OBJECTS
-from player import Player
+from any_object import LivingObject
+from configurations import COORD_VARS, DIR_VARS
+from field import Field
+from game_objects import Game
 
 
-class Monster(ABC):
-
-    def __init__(self):
-        self.row = None
-        self.column = None
+class Monster(LivingObject):
+    def __init__(self, row, column, dir):
+        super().__init__(row, column)
+        # coord
         self.previous_row = None
         self.previous_column = None
-        self.dir = 6
-        self.alive = True
+        self.dir = dir
+
+    def make_move(self, field, game, step, player_won, player_lost) -> None:
+        self.previous_row, self.previous_column = self.row, self.column
+        self.move(field=field, game=game, step=step)
+        if not player_won:
+            monster_eats_player(self, game)
 
     @abstractmethod
-    def move(self, field, step):
+    def move(self, field, game, step):
         pass
 
 
 class MonsterHexamoebo(Monster):
-    def __init__(self):
-        super().__init__()
-        self.id = 6
+    def __init__(self, row, column, dir):
+        super().__init__(row, column, dir)
 
-    def move(self, field, step: int):
+    def move(self, field: Field, game: Game, step: int):
         if step % 2 == 0:
-            random_move(self, field)
+            random_move(self, game)
 
 
 class MonsterDog(Monster):
     p_turn = 0.9
 
-    def __init__(self):
-        super().__init__()
-        self.id = 7
+    def __init__(self, row, column, dir):
+        super().__init__(row, column, dir)
 
-    def move(self, field, step: int):
-        available_directions = find_available_directions(self, field)
+    def move(self, field: Field, game: Game, step: int):
+        available_directions = find_available_directions(self, game)
         if self.dir in range(4):  # defined direction
             if self.dir in [variant[2] for variant in available_directions]:
                 straight_move(self, available_directions)
             else:
-                random_move(self, field)
+                random_move(self, game)
         else:  # undefined direction
-            random_move(self, field)
+            random_move(self, game)
 
 
-class LazyMonster(Monster):
-    def __init__(self):
-        super().__init__()
-        self.id = 6
-
-    def move(self, field, step: int):
-        pass
-
-
-class TuckerCarlson(Monster):
-    putin_detection_range = 3
-
-    def __init__(self):
-        super().__init__()
-        self.id = 77
-
-    def move(self, field, step: int) -> None:
-        carlson_x = self.row
-        carlson_y = self.column
-
-        putin_x, putin_y = None, None
-        for y, row in enumerate(field.field):
-            if Player.id in row:
-                putin_x, putin_y = row.index(Player.id), y
-                break
-
-        if putin_x is None and putin_y is None:
-            random_move(self, field)
-
-        dx = putin_x - carlson_x
-        dy = putin_y - carlson_y
-
-        if dx ** 2 + dy ** 2 <= self.putin_detection_range ** 2:
-            move_options = []
-            if dx != 0:
-                dx_carlson = 1 if dx < 0 else -1
-                if field.field[self.row + dx_carlson][self.column] in PENETRABLE_OBJECTS:
-                    move_options.append((self.row + dx_carlson, self.column))
-            if dy != 0:
-                dy_carlson = 1 if dy < 0 else -1
-                if field.field[self.row][self.column + dy_carlson] in PENETRABLE_OBJECTS:
-                    move_options.append((self.row, self.column + dy_carlson))
-            if move_options:
-                self.row, self.column = choice(move_options)
-        else:
-            random_move(self, field)
-
-
-# monster's move functions
-def random_move(monster: Monster, field):
-    direction_variants = find_available_directions(monster, field)
+def random_move(monster: Monster, game: Game):
+    direction_variants = find_available_directions(monster, game)
     if direction_variants:
         monster.row, monster.column, monster.dir = choice(direction_variants)
     else:
-        monster.dir = 4
+        monster.dir = DIR_VARS['no_way']
 
 
-def find_available_directions(monster: Monster, field):
+def find_available_directions(monster: Monster, game: Game):
     direction_variants = []
     for coord in COORD_VARS[0:4]:
-        if [monster.row + coord[0], monster.column + coord[1]] in field.find_init_penetrable_cells_coord():
+        if [monster.row + coord[0], monster.column + coord[1]] in game.penetrable_cell_coord:
             direction_variants.append([monster.row + coord[0], monster.column + coord[1], COORD_VARS.index(coord)])
     return direction_variants
 
@@ -134,10 +89,57 @@ def invert_direction(direction: int):
     # return direction+2 if (3 >= direction+2 >= 0) else direction-2
 
 
-def monster_eats_player(player: Player, monster: Monster):
-    condition1 = (monster.row, monster.column) == (player.row, player.column)
-    condition2 = (monster.row, monster.column) == (player.previous_row, player.previous_column)
-    condition3 = (monster.previous_row, monster.previous_column) == (player.row, player.column)
+def monster_eats_player(monster: Monster, game: Game):
+    condition1 = (monster.row, monster.column) == (game.player.row, game.player.column)
+    condition2 = (monster.row, monster.column) == (game.player.previous_row, game.player.previous_column)
+    condition3 = (monster.previous_row, monster.previous_column) == (game.player.row, game.player.column)
     eating_conditions = [condition1, condition2 and condition3]
-    if player.alive and any(eating_conditions):
-        player.kill()
+    if game.player.exists and any(eating_conditions):  # and not game.player.won:
+        game.player.kill()
+
+# class LazyMonster(Monster):
+#     def __init__(self):
+#         super().__init__()
+#
+#     def move(self, field, step: int):
+#         pass
+
+
+# class TuckerCarlson(Monster):
+#     putin_detection_range = 3
+#
+#     def __init__(self):
+#         super().__init__()
+#         self.id = 77
+#
+#     def move(self, field, step: int) -> None:
+#         carlson_x = self.row
+#         carlson_y = self.column
+#
+#         putin_x, putin_y = None, None
+#         for y, row in enumerate(field.field):
+#             if Player.id in row:
+#                 putin_x, putin_y = row.index(Player.id), y
+#                 break
+#
+#         if putin_x is None and putin_y is None:
+#             random_move(self, field)
+#
+#         dx = putin_x - carlson_x
+#         dy = putin_y - carlson_y
+#
+#         if dx ** 2 + dy ** 2 <= self.putin_detection_range ** 2:
+#             move_options = []
+#             if dx != 0:
+#                 dx_carlson = 1 if dx < 0 else -1
+#                 if field.field[self.row + dx_carlson][self.column] in PENETRABLE_OBJECTS:
+#                     move_options.append((self.row + dx_carlson, self.column))
+#             if dy != 0:
+#                 dy_carlson = 1 if dy < 0 else -1
+#                 if field.field[self.row][self.column + dy_carlson] in PENETRABLE_OBJECTS:
+#                     move_options.append((self.row, self.column + dy_carlson))
+#             if move_options:
+#                 self.row, self.column = choice(move_options)
+#         else:
+#             random_move(self, field)
+
