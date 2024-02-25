@@ -3,10 +3,11 @@ LEVEL_CONSTANTS = {'size': 9,             # size - odd,
                    'n_mon': 1,
                    'max_bomb_num': 3,     # min_explosion_power = 2,
                    'bomb_lifetime': 6,    # min_bomb_lifespan = *,
-                   'power': 3}  # min_explosion_power = 2
+                   'power': 3,            # min_explosion_power = 2
+                   'n_mon_from_portal': 3}
 
 
-ID_DICT = {'Bomb': 0, 'Player': 1, 'Portal': 2, 'IntermediateWall': 3, 'BoundaryWall': 4, 'BreakableWall': 5,
+ID_DICT = {'PortalDeactivated': -1, 'Bomb': 0, 'Player': 1, 'Portal': 2, 'IntermediateWall': 3, 'BoundaryWall': 4, 'BreakableWall': 5,
            'MonsterHexamoebo': 6, 'MonsterDog': 7,
            'Explosion': 8,
            }
@@ -21,7 +22,7 @@ SYMBOLS = {0: ' ',  # empty_cell
            'Portal': '∩',       # portal
            'UsedPortal': '',  # used portal
            }
-# ▯▮ ꙱⌤   sumb = '(´ᴥ`)' ⮟⮞⮜⮝
+# ▯▮ ꙱⌤ (´ᴥ`)⮟⮞⮜⮝
 
 PLAYER_INIT_COORD = [[1, 1], [2, 1], [1, 2], [3, 1], [1, 3]]
 

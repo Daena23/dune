@@ -24,7 +24,7 @@ class Game:
         return [self.player] + self.monsters
 
     def get_non_living_objects(self) -> List[NonLivingObject]:
-        sum_lst = self.breakable_walls + self.bombs + self.explosions
+        sum_lst = self.non_breakable_walls + self.breakable_walls + self.bombs + self.explosions
         return sum_lst + [self.portal] if self.portal else sum_lst
 
     def get_objects(self) -> List[AnyObject]:

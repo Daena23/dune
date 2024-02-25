@@ -11,8 +11,6 @@ class AnyObject:
         self.column = None
         # properties
         self.penetrable = True
-        self.explosible = True
-        self.stop_explosion = False
         self.exists = False
 
 
@@ -23,7 +21,13 @@ class LivingObject(AnyObject):
         self.column = column
         self.exists = True
 
-    def make_move(self, field, game, step, player_won, player_loose):
+    def make_move(self,
+                  field,
+                  game,
+                  step,
+                  player_won,
+                  player_lost,
+                  ) -> None:
         pass
 
 

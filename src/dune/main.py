@@ -1,5 +1,5 @@
-from game_initialization import initialize_game
-from game_loop import create_new_monsters, update_bombs, update_explosions, update_field, update_loop, \
+from game_initialization import create_new_monsters, initialize_game
+from game_loop import update_bombs, update_explosions, update_field, update_loop, \
     update_object_state, update_portal, visualize
 
 
@@ -14,10 +14,8 @@ def main():
         for liv_obj in game.get_living_objects():
             liv_obj.make_move(field, game, step, player_won, player_lost)
         player_won = update_portal(game, player_won, player_lost)
-        # могила над взрывом после смерти
-        # кольцевой взрыв - взрыв портала со стеной
         update_explosions(field, game)
-        update_field(field, game, player_won)  # put objects
+        update_field(field, game)  # put objects
         player_won, player_lost, postmortem_steps = update_loop(game, player_won, player_lost, postmortem_steps)
         visualize(field, game)
         update_object_state(field, game)  # remove destroyed objects
@@ -30,6 +28,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-    # game.explosions[:] = [explosion for explosion in game.explosions if explosion.exists]
-    # game.breakable_walls[:] = [wall for wall in game.walls if wall.exists]

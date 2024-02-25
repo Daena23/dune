@@ -51,8 +51,9 @@ class Field:
 
     def find_monster_available_cells(self, game) -> List[List[int]]:
         monster_available_cells = []
+        lst = [[obj.row, obj.column] for obj in game.get_objects()]
         for row in range(self.size):
             for column in range(self.size):
-                if [row, column] not in self.breakable_wall_coord + self.non_breakable_wall_coord + PLAYER_INIT_COORD:
+                if [row, column] not in (lst + PLAYER_INIT_COORD):
                     monster_available_cells.append([row, column])
         return monster_available_cells

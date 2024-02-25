@@ -1,53 +1,9 @@
-import random
 from typing import List
 
 from any_object import AnyObject
-from configurations import COORD_VARS, DIR_VARS, LEVEL_CONSTANTS, SYMBOLS
-from dune.src.dune.monster import MonsterDog, MonsterHexamoebo
-
-
-def hits_wall(game, row_beam, column_beam):
-    for obj in game.breakable_walls:
-        if [obj.row, obj.column] == [row_beam, column_beam]:
-            destroy(obj)
-            game.penetrable_cell_coord.append([row_beam, column_beam])
-            return True
-    # for obj in game.non_breakable_walls:
-    #     if [obj.row, obj.column] == [row_beam, column_beam]:
-    #         return True
-    return False
-
-
-def hits_living_object(game, row_beam, column_beam):
-    for liv_obj in game.get_living_objects():
-        if [liv_obj.row, liv_obj.column] == [row_beam, column_beam]:
-            destroy(liv_obj)
-
-
-def hits_portal(field, game, row_beam, column_beam):
-    if [game.portal.row, game.portal.column] == [row_beam, column_beam] and\
-            [game.portal.row, game.portal.column] not in field.breakable_wall_coord:
-        game.create_new_monsters = True
-
-
-def destroy(obj):
-    obj.exists = False
-    obj.symbol = SYMBOLS['Destroying']
-
-
-def hits_bomb(game, row_beam, column_beam) -> bool:
-    for bomb in game.bombs:
-        if [bomb.row, bomb.column] == [row_beam, column_beam]:
-            bomb.timer = LEVEL_CONSTANTS['bomb_lifetime']
-            return True
-    return False
-
-
-def has_object(objects: List[AnyObject], row: int, column: int) -> bool:
-    for obj in objects:
-        if [obj.row, obj.column] == [row, column]:
-            return True
-    return False
+from configurations import COORD_VARS, LEVEL_CONSTANTS, SYMBOLS
+from field import Field
+from game_objects import Game
 
 
 class Explosion(AnyObject):
@@ -62,10 +18,8 @@ class Explosion(AnyObject):
         self.area = self.find_area(game)
         # properties
         self.penetrable = True
-        self.explosible = False
-        self.stop_explosion = False
 
-    def find_area(self, game):
+    def find_area(self, game: Game) -> List[List[int]]:
         area = []
         for row_dir, column_dir in COORD_VARS[0:4]:
             for power in range(1, LEVEL_CONSTANTS['power']):
@@ -79,7 +33,7 @@ class Explosion(AnyObject):
         area = set(area)
         return [list(explosion_point) for explosion_point in area]
 
-    def affect_own_area(self, field, game) -> bool:
+    def affect_own_area(self, field: Field, game: Game) -> bool:
         chain = False
         for row, column in self.area:
             hits_living_object(game, row, column)
@@ -89,3 +43,42 @@ class Explosion(AnyObject):
             chain = chain or another_bomb_affected
         # It returns whether this explosion hits another bomb or not.
         return chain
+
+
+def hits_living_object(game: Game, row_beam: int, column_beam: int) -> None:
+    for liv_obj in game.get_living_objects():
+        if [liv_obj.row, liv_obj.column] == [row_beam, column_beam]:
+            destroy(liv_obj)
+
+
+def hits_portal(field: Field, game: Game, row_beam: int, column_beam: int) -> None:
+    if [game.portal.row, game.portal.column] == [row_beam, column_beam] and\
+            [game.portal.row, game.portal.column] not in field.breakable_wall_coord:
+        game.create_new_monsters = True
+
+
+def hits_wall(game: Game, row_beam: int, column_beam: int) -> None:
+    for obj in game.breakable_walls:
+        if [obj.row, obj.column] == [row_beam, column_beam]:
+            destroy(obj)
+            game.penetrable_cell_coord.append([row_beam, column_beam])
+
+
+def destroy(obj) -> None:
+    obj.exists = False
+    obj.symbol = SYMBOLS['Destroying']
+
+
+def hits_bomb(game: Game, row_beam: int, column_beam: int) -> bool:
+    for bomb in game.bombs:
+        if [bomb.row, bomb.column] == [row_beam, column_beam]:
+            bomb.timer = LEVEL_CONSTANTS['bomb_lifetime']
+            return True
+    return False
+
+
+def has_object(objects: List[AnyObject], row: int, column: int) -> bool:
+    for obj in objects:
+        if [obj.row, obj.column] == [row, column]:
+            return True
+    return False
