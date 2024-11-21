@@ -1,12 +1,14 @@
 import time
 from copy import deepcopy
+from random import choice
 from typing import List, Tuple
 
 from bomb import Bomb
-from configurations import ID_DICT, SYMBOLS
+from configurations import SYMBOLS, LEVEL_CONSTANTS, DIR_VARS
 from explosion import Explosion
 from field import Field
-from game_objects import Game
+from game import Game
+from monster import MonsterDog, MonsterHexamoebo
 
 
 def update_bombs(field: Field, game: Game) -> None:
@@ -21,21 +23,11 @@ def create_bomb(game: Game) -> None:
     game.penetrable_cell_coord.remove([game.player.previous_row, game.player.previous_column])
 
 
-def update_portal(game: Game, player_won: bool, player_lost: bool) -> bool:
-    if not (player_won or player_lost):
-        # portal activation and usage
-        if not game.monsters:
-            if not game.portal.activated:  # activation
-                game.portal.activated = True
-                game.portal.id = ID_DICT['Portal']
-            else:
-                if game.portal.check_win_condition(game):  # usage
-                    player_won = True
-        # portal is exploded
-        else:
-            if game.portal.activated:
-                game.portal.activated = False
-                game.portal.id = ID_DICT['PortalDeactivated']
+def check_if_player_won(game: Game, player_won: bool) -> bool:
+    if game.monsters:
+        game.portal.deactivate()
+    else:
+        game.portal.activate()
     return player_won
 
 
@@ -55,16 +47,19 @@ def update_explosions(field: Field, game: Game) -> None:
 
 
 def update_field(field: Field, game: Game) -> None:
-    field.field = deepcopy(field.empty_field)
-    for obj in game.get_objects():
-        field.field[obj.row][obj.column].append(obj)
+    field.main = deepcopy(field.empty)
+    for obj in game.objects:
+        field.main[obj.row][obj.column].append(obj)
 
 
-def update_loop(game: Game,
-                player_won: bool,
-                player_lost: bool,
-                postmortem_steps: int,
-                ) -> Tuple[bool, bool, int]:
+def update_loop(
+        game: Game,
+        player_won: bool,
+        player_lost: bool,
+        postmortem_steps: int,
+) -> Tuple[bool, bool, int]:
+    if not game.monsters and game.portal.activated:
+        player_won = game.portal.check_if_win(game)
     if player_lost:
         game.player.symbol = SYMBOLS['Grave']
     if not game.player.exists:
@@ -81,37 +76,47 @@ def visualize(field: Field, game: Game) -> None:
     print()
     symbol = ''
     for row in range(field.size):
-        string = ''
+        expl_visual = ''
         for column in range(field.size):
-            if not field.field[row][column]:
+            if not field.main[row][column]:
                 symbol = ' '
             else:
-                id_repr = max(obj.id for obj in field.field[row][column])
-                for obj in field.field[row][column]:
+                id_repr = max(obj.id for obj in field.main[row][column])
+                for obj in field.main[row][column]:
                     if obj.id == id_repr:
                         symbol = obj.symbol
             if put_explosion(game, row, column):
                 symbol = SYMBOLS['ExplosionBeam']
-            string = string + 2 * ' ' + symbol
-        print(string)  # field
+            expl_visual = expl_visual + 2 * ' ' + symbol
+        print(expl_visual)
     print()
 
 
 def put_explosion(game: Game, row: int, column: int) -> bool:
     for explosion in game.explosions:
-        liv_obj_coord = [[liv_obj.row, liv_obj.column] for liv_obj in game.get_living_objects()]
+        liv_obj_coord = [[liv_obj.row, liv_obj.column] for liv_obj in game.living_objects]
         if [row, column] in explosion.area and [row, column] not in liv_obj_coord:
             return True
     return False
 
 
-def update_object_state(field: Field, game: Game) -> None:
-    for lst in [game.monsters, game.breakable_walls, game.bombs]:
-        lst[:] = [obj for obj in lst if obj.exists]
+def remove_objects(field: Field, game: Game) -> None:
+    for objects in [game.monsters, game.breakable_walls, game.bombs]:
+        objects[:] = [obj for obj in objects if obj.exists]
     field.breakable_wall_coord = [[wall.row, wall.column] for wall in game.breakable_walls]
     game.explosions = []
 
 
 def put_on_field(field: Field, obj_lst: List) -> None:
     for obj in obj_lst:
-        field.field[obj.row][obj.column].append(obj)
+        field.main[obj.row][obj.column].append(obj)
+
+
+def create_monster(game: Game, row: int, column: int) -> None:
+    new_monster = (MonsterDog, MonsterHexamoebo)
+    game.monsters.append(choice(new_monster)(row, column, DIR_VARS['undefined']))
+
+def create_monsters_from_portal(game: Game) -> None:
+    for counter in range(LEVEL_CONSTANTS['portal_monster_number']):
+        create_monster(game, game.portal.row, game.portal.column)
+    game.portal.is_under_explosion = False

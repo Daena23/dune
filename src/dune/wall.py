@@ -1,3 +1,5 @@
+from abc import abstractmethod
+
 from any_object import NonLivingObject
 
 

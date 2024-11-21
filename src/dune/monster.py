@@ -5,24 +5,24 @@ from typing import List
 from any_object import LivingObject
 from configurations import COORD_VARS, DIR_VARS
 from field import Field
-from game_objects import Game
+from game import Game
 
 
 class Monster(LivingObject):
-    def __init__(self, row, column, direction):
+    def __init__(self, row: int, column: int, direction: int):
         super().__init__(row, column)
-        # coord
         self.previous_row = None
         self.previous_column = None
         self.dir = direction
 
-    def make_move(self,
-                  field: Field,
-                  game: Game,
-                  step: int,
-                  player_won: bool,
-                  player_lost: bool,
-                  ) -> None:
+    def make_move(
+            self,
+            field: Field,
+            game: Game,
+            step: int,
+            player_won: bool,
+            player_lost: bool,
+    ) -> None:
         self.previous_row, self.previous_column = self.row, self.column
         self.move(field=field, game=game, step=step)
         if not player_won:
@@ -34,7 +34,7 @@ class Monster(LivingObject):
 
 
 class MonsterHexamoebo(Monster):
-    def __init__(self, row, column, direction):
+    def __init__(self, row: int, column: int, direction: int):
         super().__init__(row, column, direction)
 
     def move(self, field: Field, game: Game, step: int) -> None:
@@ -45,7 +45,7 @@ class MonsterHexamoebo(Monster):
 class MonsterDog(Monster):
     p_turn = 0.9
 
-    def __init__(self, row, column, direction):
+    def __init__(self, row: int, column: int, direction: int):
         super().__init__(row, column, direction)
 
     def move(self, field: Field, game: Game, step: int) -> None:
@@ -75,7 +75,7 @@ def find_available_directions(monster: Monster, game: Game) -> List[List[int]]:
     return direction_variants
 
 
-def straight_move(monster: Monster, available_directions: List) -> None:
+def straight_move(monster: Monster, available_directions: List[List[int]]) -> None:
     if len(available_directions) <= 2:
         monster.row += COORD_VARS[monster.dir][0]
         monster.column += COORD_VARS[monster.dir][1]
@@ -83,7 +83,7 @@ def straight_move(monster: Monster, available_directions: List) -> None:
         do_casual_turn(monster, available_directions)
 
 
-def do_casual_turn(monster: Monster, available_directions: List) -> None:
+def do_casual_turn(monster: Monster, available_directions: List[List[int]]) -> None:
     direction = monster.dir
     reverse_direction = invert_direction(direction)
     monster_coord = choice([variant for variant in available_directions if variant[2] != reverse_direction])
@@ -92,7 +92,6 @@ def do_casual_turn(monster: Monster, available_directions: List) -> None:
 
 def invert_direction(direction: int) -> int:
     return (direction + 2) % 4
-    # return direction+2 if (3 >= direction+2 >= 0) else direction-2
 
 
 def monster_eats_player(monster: Monster, game: Game) -> None:

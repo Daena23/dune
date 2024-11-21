@@ -1,32 +1,51 @@
-LEVEL_CONSTANTS = {'size': 9,             # size - odd,
-                   'p_walls': 0.2,        # p_wall - 0.1-0.3,
-                   'n_mon': 1,
-                   'max_bomb_num': 3,     # min_explosion_power = 2,
-                   'bomb_lifetime': 6,    # min_bomb_lifespan = *,
-                   'power': 3,            # min_explosion_power = 2
-                   'n_mon_from_portal': 3}
+from enum import Enum, auto
 
 
-ID_DICT = {'PortalDeactivated': -1, 'Bomb': 0, 'Player': 1, 'Portal': 2, 'IntermediateWall': 3, 'BoundaryWall': 4, 'BreakableWall': 5,
-           'MonsterHexamoebo': 6, 'MonsterDog': 7,
-           'Explosion': 8,
-           }
+LEVEL_CONSTANTS = {
+    'size': 9,               # field size: odd number,
+    'p_walls': 0.2,          # p_wall: 0.1-0.3,
+    'init_monster_number': 3,
+    'max_bomb_num': 3,
+    'bomb_lifetime': 5,      # min_bomb_lifetime: 1,
+    'explosion_power': 3,    # min_explosion_explosion_power: 2
+    'portal_monster_number': 3,
+}
 
-SYMBOLS = {0: ' ',  # empty_cell
-           'BoundaryWall': '□', 'IntermediateWall': '□', 'BreakableWall': '#',  # walls
-           'Player': 'Ꙋ', 'Grave': 'ⴕ',                 # player
-           'MonsterDog': 'Ɣ', 'MonsterHexamoebo': 'ꙮ',  # monsters
-           'Bomb': 'Ѳ',                                 # bombs
-           'Explosion': '✷', 'ExplosionBeam': '✶',  # explosion: center, corners
-           'Destroying': '҉',   # destroying
-           'Portal': '∩',       # portal
-           'UsedPortal': '',  # used portal
-           }
-# ▯▮ ꙱⌤ (´ᴥ`)⮟⮞⮜⮝
+
+class ObjectId(Enum):
+    PortalDeactivated = auto()
+    Bomb = auto()
+    Player = auto()
+    Portal = auto()
+    IntermediateWall = auto()
+    BoundaryWall = auto()
+    BreakableWall = auto()
+    MonsterHexamoebo = auto()
+    MonsterDog = auto()
+    Explosion = auto()
+
+
+SYMBOLS = {
+     0: ' ',  # empty_cell
+    'BoundaryWall': '□',
+    'IntermediateWall': '□',
+    'BreakableWall': '#',
+    'Player': 'Ꙋ',
+    'Grave': 'ⴕ',
+    'MonsterDog': 'Ɣ',
+    'MonsterHexamoebo': 'ꙮ',
+    'Bomb': 'Ѳ',
+    'Explosion': '✷', # explosion
+    'ExplosionBeam': '✶',  # explosion: center, corners
+    'Destroying': '҉',
+    'Portal': '∩',
+    'UsedPortal': '֍',
+}
 
 PLAYER_INIT_COORD = [[1, 1], [2, 1], [1, 2], [3, 1], [1, 3]]
 
 COORD_VARS = [[-1, 0], [0, -1], [1, 0], [0, 1], [0, 0], [0, 0]]
+
 DIR_VARS = {'up': 0, 'left': 1, 'down': 2, 'right': 3, 'no_way': 4, 'undefined': 5}
 
 PLAYER_VARS = [

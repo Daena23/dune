@@ -5,10 +5,10 @@ from configurations import LEVEL_CONSTANTS
 class Bomb(AnyObject):
     def __init__(self, row, column):
         super().__init__()
-        # coord
+        # Coordinates
         self.row = row
         self.column = column
-        # properties
+        # Properties
         self.exists = True
         self.timer = 0
         self.penetrable = False

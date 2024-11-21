@@ -1,15 +1,15 @@
-from auxiliary_func import get_symbol
-from configurations import ID_DICT, SYMBOLS
+from configurations import SYMBOLS, ObjectId
 
 
 class AnyObject:
     def __init__(self):
-        self.id = get_symbol(self, ID_DICT)
-        self.symbol = get_symbol(self, SYMBOLS)
-        # coord
+        obj_type = type(self).__name__
+        self.id = getattr(ObjectId, obj_type).value
+        self.symbol = SYMBOLS[obj_type]
+        # Coordinates
         self.row = None
         self.column = None
-        # properties
+        # Properties
         self.penetrable = True
         self.exists = False
 
@@ -21,13 +21,14 @@ class LivingObject(AnyObject):
         self.column = column
         self.exists = True
 
-    def make_move(self,
-                  field,
-                  game,
-                  step,
-                  player_won,
-                  player_lost,
-                  ) -> None:
+    def make_move(
+            self,
+            field,
+            game,
+            step,
+            player_won,
+            player_lost,
+    ) -> None:
         pass
 
 
